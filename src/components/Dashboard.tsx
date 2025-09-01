@@ -74,7 +74,10 @@ const PieChart: React.FC<PieChartProps> = ({ stats }) => {
         dataKey="value"
       >
         {data.map((entry, index) => (
-          <Cell key={`cell-${index}`} fill={COLORS[entry.name as keyof typeof COLORS]} />
+          <Cell
+            key={`cell-${index}`}
+            fill={COLORS[entry.name as keyof typeof COLORS]}
+          />
         ))}
       </Pie>
       <Tooltip
@@ -156,9 +159,27 @@ const taskStats = {
 };
 
 const myTasks = [
-  { id: 1, title: "Review pull request #125", project: "Web App", priority: "high", status: "In Progress" },
-  { id: 2, title: "Design marketing landing page", project: "Marketing", priority: "medium", status: "To Do" },
-  { id: 3, title: "Fix bug in user profile", project: "Backend", priority: "high", status: "Blocked" },
+  {
+    id: 1,
+    title: "Review pull request #125",
+    project: "Web App",
+    priority: "high",
+    status: "In Progress",
+  },
+  {
+    id: 2,
+    title: "Design marketing landing page",
+    project: "Marketing",
+    priority: "medium",
+    status: "To Do",
+  },
+  {
+    id: 3,
+    title: "Fix bug in user profile",
+    project: "Backend",
+    priority: "high",
+    status: "Blocked",
+  },
 ];
 
 const upcomingDeadlines = [
@@ -266,13 +287,8 @@ export function Dashboard() {
             Welcome back! Here's a snapshot of your team's progress.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="gap-2 border-gray-300 dark:border-zinc-700">
-            <PlusCircle className="h-4 w-4" />
-            New Task
-          </Button>
-          <ScheduleMeeting />
-        </div>
+
+        <ScheduleMeeting />
       </div>
 
       {/* Stats Cards */}
@@ -317,7 +333,10 @@ export function Dashboard() {
                 <CardTitle>Project Progress</CardTitle>
                 <CardDescription>Current sprint overview</CardDescription>
               </div>
-              <Badge variant="outline" className="text-sm border-gray-300 dark:border-zinc-700">
+              <Badge
+                variant="outline"
+                className="text-sm border-gray-300 dark:border-zinc-700"
+              >
                 {projectProgress.status}
               </Badge>
             </div>
@@ -326,7 +345,9 @@ export function Dashboard() {
             <div className="relative w-[120px] h-[120px] shrink-0">
               <PieChart stats={taskStats} />
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-                <div className="text-xl font-bold">{projectProgress.current}%</div>
+                <div className="text-xl font-bold">
+                  {projectProgress.current}%
+                </div>
                 <div className="text-xs text-muted-foreground">Progress</div>
               </div>
             </div>
@@ -334,7 +355,9 @@ export function Dashboard() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Overall Progress</span>
-                  <span className="font-medium">{projectProgress.current}%</span>
+                  <span className="font-medium">
+                    {projectProgress.current}%
+                  </span>
                 </div>
                 <Progress value={projectProgress.current} className="h-3" />
                 <div className="flex justify-between text-xs text-muted-foreground">
@@ -357,7 +380,9 @@ export function Dashboard() {
                   <div className="text-lg font-bold text-blue-500">
                     {taskStats.inProgress}
                   </div>
-                  <div className="text-xs text-muted-foreground">In Progress</div>
+                  <div className="text-xs text-muted-foreground">
+                    In Progress
+                  </div>
                 </div>
                 <div className="text-center p-3 rounded-lg bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700">
                   <div className="text-lg font-bold text-green-500">
@@ -426,9 +451,7 @@ export function Dashboard() {
               <ListTodo className="h-5 w-5 text-gray-500 dark:text-gray-400" />
               <CardTitle>My Tasks</CardTitle>
             </div>
-            <CardDescription>
-              Tasks assigned to you.
-            </CardDescription>
+            <CardDescription>Tasks assigned to you.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -438,7 +461,9 @@ export function Dashboard() {
                   className="flex items-center justify-between p-3 rounded-lg bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <CheckCircle className={cn("h-4 w-4", getStatusColor(task.status))} />
+                    <CheckCircle
+                      className={cn("h-4 w-4", getStatusColor(task.status))}
+                    />
                     <div className="space-y-1">
                       <div className="font-medium text-sm">{task.title}</div>
                       <div className="text-xs text-muted-foreground">
@@ -484,8 +509,12 @@ export function Dashboard() {
                     <div className="flex items-center space-x-2">
                       {getActivityIcon(activity.type)}
                       <span className="text-sm">
-                        <span className="font-semibold">{activity.user.name}</span>{" "}
-                        <span className="text-muted-foreground">{activity.action}</span>{" "}
+                        <span className="font-semibold">
+                          {activity.user.name}
+                        </span>{" "}
+                        <span className="text-muted-foreground">
+                          {activity.action}
+                        </span>{" "}
                         <span className="font-medium">{activity.target}</span>
                       </span>
                     </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -32,6 +32,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus,
@@ -48,55 +50,16 @@ import {
   Trash2,
   Copy,
   ExternalLink,
+  KanbanSquare,
+  List,
+  GanttChartSquare,
+  CalendarDays,
+  Search,
+  History,
+  CheckCircle2,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  priority: "low" | "medium" | "high" | "urgent";
-  assignee: {
-    id: string;
-    name: string;
-    avatar: string;
-    initials: string;
-  };
-  dueDate?: Date;
-  tags: string[];
-  comments: Comment[];
-  attachments: Attachment[];
-  status: "todo" | "inprogress" | "done";
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface Comment {
-  id: string;
-  author: {
-    id: string;
-    name: string;
-    avatar: string;
-    initials: string;
-  };
-  content: string;
-  createdAt: Date;
-}
-
-interface Attachment {
-  id: string;
-  name: string;
-  size: string;
-  type: string;
-  url: string;
-}
-
-interface Column {
-  id: string;
-  title: string;
-  tasks: Task[];
-  color: string;
-}
 
 const mockAssignees = [
   {
@@ -125,11 +88,76 @@ const mockAssignees = [
   },
 ];
 
+interface Subtask {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+interface Comment {
+  id: string;
+  author: {
+    id: string;
+    name: string;
+    avatar: string;
+    initials: string;
+  };
+  content: string;
+  createdAt: Date;
+}
+
+interface Attachment {
+  id: string;
+  name: string;
+  size: string;
+  type: string;
+  url: string;
+}
+
+interface HistoryEntry {
+  id: string;
+  action: string;
+  timestamp: Date;
+  details?: string;
+}
+
+interface Task {
+  id: string;
+  title: string;
+  description: string;
+  priority: "low" | "medium" | "high" | "urgent";
+  assignee: {
+    id: string;
+    name: string;
+    avatar: string;
+    initials: string;
+  };
+  dueDate?: Date;
+  tags: string[];
+  comments: Comment[];
+  attachments: Attachment[];
+  status: "todo" | "inprogress" | "review" | "completed";
+  subtasks: Subtask[];
+  progress: number;
+  history: HistoryEntry[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface Column {
+  id: string;
+  title: string;
+  tasks: Task[];
+  color: string;
+  wipLimit?: number;
+}
+
 const initialData: Column[] = [
   {
     id: "todo",
     title: "To Do",
     color: "border-muted-foreground/20",
+    wipLimit: 5,
     tasks: [
       {
         id: "1",
@@ -138,7 +166,7 @@ const initialData: Column[] = [
           "Create wireframes and mockups for the new user registration process",
         priority: "high",
         assignee: mockAssignees[0],
-        dueDate: new Date(2024, 11, 28),
+        dueDate: new Date(2025, 11, 28),
         tags: ["Design", "UX"],
         comments: [
           {
@@ -146,7 +174,7 @@ const initialData: Column[] = [
             author: mockAssignees[1],
             content:
               "We should consider A/B testing different onboarding flows",
-            createdAt: new Date(2024, 11, 20),
+            createdAt: new Date(2025, 11, 20),
           },
         ],
         attachments: [
@@ -159,8 +187,28 @@ const initialData: Column[] = [
           },
         ],
         status: "todo",
-        createdAt: new Date(2024, 11, 15),
-        updatedAt: new Date(2024, 11, 20),
+        subtasks: [
+          { id: "s1", text: "Research competitor onboarding", completed: true },
+          { id: "s2", text: "Sketch wireframes", completed: false },
+          { id: "s3", text: "Create high-fidelity mockups", completed: false },
+        ],
+        progress: 33,
+        history: [
+          {
+            id: "h1",
+            action: "Task created",
+            timestamp: new Date(2025, 11, 15),
+            details: "Created by Sarah Johnson",
+          },
+          {
+            id: "h2",
+            action: "Comment added",
+            timestamp: new Date(2025, 11, 20),
+            details: "Comment added by Mike Chen",
+          },
+        ],
+        createdAt: new Date(2025, 11, 15),
+        updatedAt: new Date(2025, 11, 20),
       },
       {
         id: "2",
@@ -169,13 +217,29 @@ const initialData: Column[] = [
           "Configure GitHub Actions for automated testing and deployment",
         priority: "medium",
         assignee: mockAssignees[1],
-        dueDate: new Date(2024, 11, 30),
+        dueDate: new Date(2025, 11, 30),
         tags: ["DevOps", "Backend"],
         comments: [],
         attachments: [],
         status: "todo",
-        createdAt: new Date(2024, 11, 18),
-        updatedAt: new Date(2024, 11, 18),
+        subtasks: [
+          {
+            id: "s4",
+            text: "Create GitHub Actions workflow",
+            completed: false,
+          },
+        ],
+        progress: 0,
+        history: [
+          {
+            id: "h3",
+            action: "Task created",
+            timestamp: new Date(2025, 11, 18),
+            details: "Created by Mike Chen",
+          },
+        ],
+        createdAt: new Date(2025, 11, 18),
+        updatedAt: new Date(2025, 11, 18),
       },
     ],
   },
@@ -183,6 +247,7 @@ const initialData: Column[] = [
     id: "inprogress",
     title: "In Progress",
     color: "border-info/50",
+    wipLimit: 3,
     tasks: [
       {
         id: "4",
@@ -190,7 +255,7 @@ const initialData: Column[] = [
         description: "Integrate Stripe payment processing for subscriptions",
         priority: "high",
         assignee: mockAssignees[3],
-        dueDate: new Date(2024, 11, 29),
+        dueDate: new Date(2025, 11, 29),
         tags: ["Backend", "Payment"],
         comments: [
           {
@@ -198,33 +263,117 @@ const initialData: Column[] = [
             author: mockAssignees[0],
             content:
               "Make sure to implement webhook handling for payment confirmations",
-            createdAt: new Date(2024, 11, 22),
+            createdAt: new Date(2025, 11, 22),
           },
         ],
         attachments: [],
         status: "inprogress",
-        createdAt: new Date(2024, 11, 16),
-        updatedAt: new Date(2024, 11, 22),
+        subtasks: [
+          { id: "s5", text: "Set up Stripe account", completed: true },
+          { id: "s6", text: "Implement API endpoints", completed: true },
+          { id: "s7", text: "Test payment flow", completed: false },
+        ],
+        progress: 66,
+        history: [
+          {
+            id: "h4",
+            action: "Task created",
+            timestamp: new Date(2025, 11, 16),
+            details: "Created by Alex Smith",
+          },
+          {
+            id: "h5",
+            action: "Status changed",
+            timestamp: new Date(2025, 11, 20),
+            details: "Status changed from 'To Do' to 'In Progress'",
+          },
+          {
+            id: "h6",
+            action: "Comment added",
+            timestamp: new Date(2025, 11, 22),
+            details: "Comment added by Sarah Johnson",
+          },
+        ],
+        createdAt: new Date(2025, 11, 16),
+        updatedAt: new Date(2025, 11, 22),
       },
     ],
   },
   {
-    id: "done",
-    title: "Done",
+    id: "review",
+    title: "Review Ready",
+    color: "border-warning/50",
+    wipLimit: 2,
+    tasks: [
+      {
+        id: "8",
+        title: "Review marketing copy",
+        description:
+          "Review and approve the new website copy for the homepage.",
+        priority: "medium",
+        assignee: mockAssignees[0],
+        dueDate: new Date(2025, 11, 27),
+        tags: ["Marketing", "Copywriting"],
+        comments: [],
+        attachments: [],
+        status: "review",
+        subtasks: [
+          {
+            id: "s8",
+            text: "Check for grammar and spelling",
+            completed: false,
+          },
+        ],
+        progress: 0,
+        history: [
+          {
+            id: "h7",
+            action: "Task created",
+            timestamp: new Date(2025, 11, 25),
+            details: "Created by Sarah Johnson",
+          },
+        ],
+        createdAt: new Date(2025, 11, 25),
+        updatedAt: new Date(2025, 11, 25),
+      },
+    ],
+  },
+  {
+    id: "completed",
+    title: "Completed",
     color: "border-success/50",
     tasks: [
       {
         id: "6",
         title: "User authentication system",
         description: "Implement JWT-based authentication with refresh tokens",
-        priority: "high",
+        priority: "low",
         assignee: mockAssignees[1],
         tags: ["Backend", "Security"],
         comments: [],
         attachments: [],
-        status: "done",
-        createdAt: new Date(2024, 11, 10),
-        updatedAt: new Date(2024, 11, 25),
+        status: "completed",
+        subtasks: [
+          { id: "s9", text: "Design database schema", completed: true },
+          { id: "s10", text: "Implement API endpoints", completed: true },
+        ],
+        progress: 100,
+        history: [
+          {
+            id: "h8",
+            action: "Task created",
+            timestamp: new Date(2025, 11, 10),
+            details: "Created by Mike Chen",
+          },
+          {
+            id: "h9",
+            action: "Status changed",
+            timestamp: new Date(2025, 11, 25),
+            details: "Status changed to 'Completed'",
+          },
+        ],
+        createdAt: new Date(2025, 11, 10),
+        updatedAt: new Date(2025, 11, 25),
       },
     ],
   },
@@ -233,11 +382,19 @@ const initialData: Column[] = [
 const statusOptions = [
   { value: "todo", label: "To Do" },
   { value: "inprogress", label: "In Progress" },
-  { value: "done", label: "Done" },
+  { value: "review", label: "Review Ready" },
+  { value: "completed", label: "Completed" },
+];
+
+const priorityOptions = [
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+  { value: "urgent", label: "Urgent" },
 ];
 
 const priorityColors = {
-  low: "bg-blue-100 text-blue-700 border-blue-200",
+  low: "bg-green-100 text-green-700 border-green-200",
   medium: "bg-yellow-100 text-yellow-700 border-yellow-200",
   high: "bg-orange-100 text-orange-700 border-orange-200",
   urgent: "bg-red-100 text-red-700 border-red-200",
@@ -251,7 +408,10 @@ export default function KanbanBoard() {
   const [editedTask, setEditedTask] = useState<Task | null>(null);
   const [newComment, setNewComment] = useState("");
   const [newTag, setNewTag] = useState("");
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [viewMode, setViewMode] = useState("board");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterAssignee, setFilterAssignee] = useState("all");
+  const [filterPriority, setFilterPriority] = useState("all");
   const { toast } = useToast();
 
   const getPriorityColor = (priority: string) => {
@@ -302,19 +462,47 @@ export default function KanbanBoard() {
     e.preventDefault();
     if (!draggedTask) return;
 
+    const targetColumn = columns.find((col) => col.id === targetColumnId);
+    if (
+      targetColumn &&
+      targetColumn.wipLimit &&
+      targetColumn.tasks.length >= targetColumn.wipLimit &&
+      targetColumn.id !== draggedTask.status
+    ) {
+      toast({
+        title: "WIP Limit Reached",
+        description: `Cannot move task. The "${targetColumn.title}" column has reached its limit of ${targetColumn.wipLimit} tasks.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const newColumns = columns.map((column) => {
+      const filteredTasks = column.tasks.filter(
+        (task) => task.id !== draggedTask.id
+      );
+
       if (column.id === targetColumnId) {
+        const historyEntry = {
+          id: Date.now().toString(),
+          action: "Status changed",
+          timestamp: new Date(),
+          details: `Status changed from '${draggedTask.status}' to '${targetColumn.title}'`,
+        };
+        const updatedTask = {
+          ...draggedTask,
+          status: targetColumnId as Task["status"],
+          history: [...draggedTask.history, historyEntry],
+          updatedAt: new Date(),
+        };
         return {
           ...column,
-          tasks: [
-            ...column.tasks,
-            { ...draggedTask, status: targetColumnId as Task["status"] },
-          ],
+          tasks: [...filteredTasks, updatedTask],
         };
       } else {
         return {
           ...column,
-          tasks: column.tasks.filter((task) => task.id !== draggedTask.id),
+          tasks: filteredTasks,
         };
       }
     });
@@ -323,21 +511,75 @@ export default function KanbanBoard() {
     setDraggedTask(null);
   };
 
+  const calculateProgress = (subtasks: Subtask[]): number => {
+    if (subtasks.length === 0) return 0;
+    const completed = subtasks.filter((st) => st.completed).length;
+    return Math.floor((completed / subtasks.length) * 100);
+  };
+
   const handleSaveTask = (updatedTask: Task) => {
-    const newColumns = columns.map((column) => ({
-      ...column,
-      tasks: column.tasks.map((task) =>
-        task.id === updatedTask.id
-          ? { ...updatedTask, updatedAt: new Date() }
-          : task
-      ),
-    }));
+    const isNew = !columns.some((col) =>
+      col.tasks.some((task) => task.id === updatedTask.id)
+    );
+    const newColumns = columns.map((column) => {
+      if (column.id === updatedTask.status) {
+        if (isNew) {
+          return {
+            ...column,
+            tasks: [updatedTask, ...column.tasks],
+          };
+        } else {
+          return {
+            ...column,
+            tasks: column.tasks.map((task) =>
+              task.id === updatedTask.id
+                ? { ...updatedTask, updatedAt: new Date() }
+                : task
+            ),
+          };
+        }
+      } else {
+        return {
+          ...column,
+          tasks: column.tasks.filter((task) => task.id !== updatedTask.id),
+        };
+      }
+    });
+
     setColumns(newColumns);
     setIsModalOpen(false);
     toast({
-      title: "Task updated",
-      description: "Task has been successfully updated.",
+      title: "Task saved",
+      description: "Task has been successfully saved.",
     });
+  };
+
+  const handleAddTask = () => {
+    const newTask: Task = {
+      id: Date.now().toString(),
+      title: "New Task",
+      description: "",
+      priority: "medium",
+      assignee: mockAssignees[0],
+      tags: [],
+      comments: [],
+      attachments: [],
+      status: "todo",
+      subtasks: [],
+      progress: 0,
+      history: [
+        {
+          id: Date.now().toString(),
+          action: "Task created",
+          timestamp: new Date(),
+          details: "New task created.",
+        },
+      ],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setEditedTask(newTask);
+    setIsModalOpen(true);
   };
 
   const handleDeleteTask = (taskId: string) => {
@@ -356,9 +598,9 @@ export default function KanbanBoard() {
 
   const handleAddComment = () => {
     if (newComment.trim() && editedTask) {
-      const comment: Comment = {
+      const comment = {
         id: Date.now().toString(),
-        author: mockAssignees[3],
+        author: mockAssignees[3], // Assuming current user is Alex
         content: newComment,
         createdAt: new Date(),
       };
@@ -367,6 +609,15 @@ export default function KanbanBoard() {
           ? {
               ...prev,
               comments: [...prev.comments, comment],
+              history: [
+                ...prev.history,
+                {
+                  id: Date.now().toString(),
+                  action: "Comment added",
+                  timestamp: new Date(),
+                  details: "New comment added.",
+                },
+              ],
             }
           : null
       );
@@ -385,6 +636,15 @@ export default function KanbanBoard() {
           ? {
               ...prev,
               tags: [...prev.tags, newTag.trim()],
+              history: [
+                ...prev.history,
+                {
+                  id: Date.now().toString(),
+                  action: "Tag added",
+                  timestamp: new Date(),
+                  details: `Tag '${newTag.trim()}' added.`,
+                },
+              ],
             }
           : null
       );
@@ -398,19 +658,121 @@ export default function KanbanBoard() {
         ? {
             ...prev,
             tags: prev.tags.filter((tag) => tag !== tagToRemove),
+            history: [
+              ...prev.history,
+              {
+                id: Date.now().toString(),
+                action: "Tag removed",
+                timestamp: new Date(),
+                details: `Tag '${tagToRemove}' removed.`,
+              },
+            ],
           }
         : null
     );
   };
 
-  const formatDate = (date: Date) => {
+  const handleAddSubtask = () => {
+    if (editedTask) {
+      const newSubtask: Subtask = {
+        id: Date.now().toString(),
+        text: "",
+        completed: false,
+      };
+      const updatedSubtasks = [...editedTask.subtasks, newSubtask];
+      const updatedProgress = calculateProgress(updatedSubtasks);
+      setEditedTask((prev) =>
+        prev
+          ? {
+              ...prev,
+              subtasks: updatedSubtasks,
+              progress: updatedProgress,
+              history: [
+                ...prev.history,
+                {
+                  id: Date.now().toString(),
+                  action: "Subtask added",
+                  timestamp: new Date(),
+                },
+              ],
+            }
+          : null
+      );
+    }
+  };
+
+  const handleUpdateSubtask = (id: string, newText: string) => {
+    if (editedTask) {
+      const updatedSubtasks = editedTask.subtasks.map((st) =>
+        st.id === id ? { ...st, text: newText } : st
+      );
+      setEditedTask((prev) =>
+        prev ? { ...prev, subtasks: updatedSubtasks } : null
+      );
+    }
+  };
+
+  const handleDeleteSubtask = (id: string) => {
+    if (editedTask) {
+      const updatedSubtasks = editedTask.subtasks.filter((st) => st.id !== id);
+      const updatedProgress = calculateProgress(updatedSubtasks);
+      setEditedTask((prev) =>
+        prev
+          ? {
+              ...prev,
+              subtasks: updatedSubtasks,
+              progress: updatedProgress,
+              history: [
+                ...prev.history,
+                {
+                  id: Date.now().toString(),
+                  action: "Subtask removed",
+                  timestamp: new Date(),
+                },
+              ],
+            }
+          : null
+      );
+    }
+  };
+
+  const handleToggleSubtask = (id: string, checked: boolean) => {
+    if (editedTask) {
+      const updatedSubtasks = editedTask.subtasks.map((st) =>
+        st.id === id ? { ...st, completed: checked } : st
+      );
+      const updatedProgress = calculateProgress(updatedSubtasks);
+      setEditedTask((prev) =>
+        prev
+          ? {
+              ...prev,
+              subtasks: updatedSubtasks,
+              progress: updatedProgress,
+              history: [
+                ...prev.history,
+                {
+                  id: Date.now().toString(),
+                  action: "Subtask status changed",
+                  timestamp: new Date(),
+                  details: `Subtask ${checked ? "completed" : "un-checked"}.`,
+                },
+              ],
+            }
+          : null
+      );
+    }
+  };
+
+  const formatDate = (date?: Date) => {
+    if (!date) return "N/A";
     return new Intl.DateTimeFormat("ro-RO", {
       day: "numeric",
       month: "short",
     }).format(date);
   };
 
-  const formatDateFull = (date: Date) => {
+  const formatDateFull = (date?: Date) => {
+    if (!date) return "N/A";
     return new Intl.DateTimeFormat("ro-RO", {
       weekday: "long",
       year: "numeric",
@@ -419,297 +781,383 @@ export default function KanbanBoard() {
     }).format(date);
   };
 
+  const allTasks = useMemo(() => {
+    let tasks = columns.flatMap((column) => column.tasks);
+    if (searchTerm) {
+      tasks = tasks.filter(
+        (task) =>
+          task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          task.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    if (filterAssignee && filterAssignee !== "all") {
+      tasks = tasks.filter((task) => task.assignee.id === filterAssignee);
+    }
+    if (filterPriority && filterPriority !== "all") {
+      tasks = tasks.filter((task) => task.priority === filterPriority);
+    }
+    return tasks;
+  }, [columns, searchTerm, filterAssignee, filterPriority]);
+
+  const filteredColumns = useMemo(() => {
+    return columns.map((column) => ({
+      ...column,
+      tasks: column.tasks.filter(
+        (task) =>
+          (searchTerm
+            ? task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              task.description.toLowerCase().includes(searchTerm.toLowerCase())
+            : true) &&
+          (filterAssignee !== "all"
+            ? task.assignee.id === filterAssignee
+            : true) &&
+          (filterPriority !== "all" ? task.priority === filterPriority : true)
+      ),
+    }));
+  }, [columns, searchTerm, filterAssignee, filterPriority]);
+
+  const renderKanbanBoard = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 h-full overflow-x-auto pb-4">
+      {filteredColumns.map((column) => (
+        <div key={column.id} className="flex flex-col h-full min-w-[280px]">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <h3 className="font-semibold text-lg">{column.title}</h3>
+              <Badge variant="secondary" className="text-xs">
+                {column.tasks.length}
+                {column.wipLimit && `/${column.wipLimit}`}
+              </Badge>
+            </div>
+            <Button variant="ghost" size="sm" onClick={handleAddTask}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          <div
+            className={cn(
+              "flex-1 space-y-3 p-4 rounded-lg border-2 border-dashed transition-colors min-h-[500px]",
+              column.color,
+              "hover:bg-muted/20",
+              column.wipLimit && column.tasks.length >= column.wipLimit
+                ? "border-red-500/50"
+                : column.color
+            )}
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, column.id)}
+          >
+            {column.tasks.map((task) => (
+              <Card
+                key={task.id}
+                draggable
+                onDragStart={(e) => handleDragStart(e, task)}
+                onClick={() => handleTaskClick(task)}
+                className={cn(
+                  "cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4",
+                  "bg-white/50 backdrop-blur-sm dark:bg-slate-900/50",
+                  getPriorityColor(task.priority),
+                  "hover:scale-[1.01]"
+                )}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="text-sm font-medium leading-tight">
+                      {task.title}
+                    </CardTitle>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                      <MoreHorizontal className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  {task.description && (
+                    <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                      {task.description}
+                    </p>
+                  )}
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {task.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {task.tags.map((tag) => (
+                        <Badge
+                          key={tag}
+                          variant="outline"
+                          className="text-xs px-2 py-0.5"
+                        >
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  {task.subtasks.length > 0 && (
+                    <div className="mb-3">
+                      <Progress value={task.progress} className="h-2" />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {task.progress}% complete
+                      </p>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between mb-3">
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "text-xs capitalize",
+                        getPriorityBadgeColor(task.priority)
+                      )}
+                    >
+                      <Flag className="mr-1 h-2 w-2" />
+                      {task.priority}
+                    </Badge>
+                    {task.dueDate && (
+                      <div className="flex items-center text-xs text-muted-foreground">
+                        <CalendarIcon className="mr-1 h-3 w-3" />
+                        {formatDate(task.dueDate)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={task.assignee.avatar} />
+                      <AvatarFallback className="text-xs">
+                        {task.assignee.initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                      {task.comments.length > 0 && (
+                        <div className="flex items-center space-x-1">
+                          <MessageSquare className="h-3 w-3" />
+                          <span>{task.comments.length}</span>
+                        </div>
+                      )}
+                      {task.attachments.length > 0 && (
+                        <div className="flex items-center space-x-1">
+                          <Paperclip className="h-3 w-3" />
+                          <span>{task.attachments.length}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            <Button
+              variant="ghost"
+              className="w-full h-12 border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5 transition-colors"
+              onClick={handleAddTask}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add a task
+            </Button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const renderListView = () => (
+    <div className="space-y-4">
+      <Card className="bg-white/50 backdrop-blur-sm dark:bg-slate-900/50">
+        <div className="grid grid-cols-12 p-4 font-bold text-muted-foreground border-b">
+          <div className="col-span-4">Title</div>
+          <div className="col-span-2">Assignee</div>
+          <div className="col-span-1 text-center">Priority</div>
+          <div className="col-span-1 text-center">Status</div>
+          <div className="col-span-1 text-center">Progress</div>
+          <div className="col-span-2 text-center">Due Date</div>
+          <div className="col-span-1 text-right">Actions</div>
+        </div>
+      </Card>
+      {allTasks.map((task) => (
+        <Card
+          key={task.id}
+          className="cursor-pointer hover:shadow-md transition-all duration-200 bg-white/50 backdrop-blur-sm dark:bg-slate-900/50"
+          onClick={() => handleTaskClick(task)}
+        >
+          <div className="grid grid-cols-12 p-4 items-center">
+            <div className="col-span-4 font-medium text-sm">{task.title}</div>
+            <div className="col-span-2 flex items-center gap-2">
+              <Avatar className="h-6 w-6">
+                <AvatarImage src={task.assignee.avatar} />
+                <AvatarFallback className="text-xs">
+                  {task.assignee.initials}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-sm text-muted-foreground hidden md:inline">
+                {task.assignee.name}
+              </span>
+            </div>
+            <div className="col-span-1 text-center">
+              <Badge
+                variant="outline"
+                className={cn(
+                  "text-xs capitalize",
+                  getPriorityBadgeColor(task.priority)
+                )}
+              >
+                {task.priority}
+              </Badge>
+            </div>
+            <div className="col-span-1 text-center">
+              <Badge variant="secondary" className="capitalize text-xs">
+                {task.status}
+              </Badge>
+            </div>
+            <div className="col-span-1 text-center text-xs text-muted-foreground">
+              <Progress value={task.progress} className="h-2" />
+            </div>
+            <div className="col-span-2 text-center text-xs text-muted-foreground">
+              {task.dueDate ? formatDateFull(task.dueDate) : "N/A"}
+            </div>
+            <div className="col-span-1 text-right">
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+
+  const renderCalendarView = () => (
+    <div className="text-center py-20 text-muted-foreground">
+      <CalendarDays className="mx-auto h-16 w-16 mb-4" />
+      <p className="text-xl font-bold">Calendar View Coming Soon</p>
+      <p className="text-sm">
+        This view will display your tasks on a calendar based on their due
+        dates.
+      </p>
+    </div>
+  );
+
+  const renderGanttView = () => (
+    <div className="text-center py-20 text-muted-foreground">
+      <GanttChartSquare className="mx-auto h-16 w-16 mb-4" />
+      <p className="text-xl font-bold">Gantt Chart Coming Soon</p>
+      <p className="text-sm">
+        This view will provide a project timeline to visualize task
+        dependencies.
+      </p>
+    </div>
+  );
+
   return (
     <div className="flex-1 p-4 sm:p-6 bg-dashboard-bg min-h-screen">
-      {/* Header */}
-      <div className="mb-4 sm:mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              Kanban Board
-            </h1>
-            <p className="text-muted-foreground text-sm sm:text-base">
-              Manage your tasks and track progress across different stages.
-            </p>
-          </div>
-          <Button className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            Project Dashboard
+          </h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
+            Visualize and manage project tasks.
+          </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant={viewMode === "board" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("board")}
+            className="hidden sm:inline-flex"
+          >
+            <KanbanSquare className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === "list" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("list")}
+            className="hidden sm:inline-flex"
+          >
+            <List className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === "calendar" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("calendar")}
+            className="hidden sm:inline-flex"
+          >
+            <CalendarDays className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === "gantt" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("gantt")}
+            className="hidden sm:inline-flex"
+          >
+            <GanttChartSquare className="h-4 w-4" />
+          </Button>
+
+          <Button
+            className="bg-primary hover:bg-primary/90"
+            onClick={handleAddTask}
+          >
             <Plus className="mr-2 h-4 w-4" />
             Add Task
           </Button>
         </div>
       </div>
-
-      {/* Board */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 h-full overflow-x-auto">
-        <div className="lg:hidden flex gap-4 min-w-max">
-          {columns.map((column) => (
-            <div key={column.id} className="flex flex-col h-full min-w-[280px]">
-              {/* Column Header */}
-              <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <h3 className="font-semibold text-lg">{column.title}</h3>
-                  <Badge variant="secondary" className="text-xs">
-                    {column.tasks.length}
-                  </Badge>
-                </div>
-                <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {/* Tasks Container */}
-              <div
-                className={cn(
-                  "flex-1 space-y-3 p-4 rounded-lg border-2 border-dashed transition-colors min-h-[500px]",
-                  column.color,
-                  "hover:bg-muted/20"
-                )}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, column.id)}
-              >
-                {column.tasks.map((task) => (
-                  <Card
-                    key={task.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, task)}
-                    onClick={() => handleTaskClick(task)}
-                    className={cn(
-                      "cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4",
-                      getPriorityColor(task.priority),
-                      "hover:scale-105"
-                    )}
-                  >
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <CardTitle className="text-sm font-medium leading-tight">
-                          {task.title}
-                        </CardTitle>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0"
-                        >
-                          <MoreHorizontal className="h-3 w-3" />
-                        </Button>
-                      </div>
-                      {task.description && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {task.description}
-                        </p>
-                      )}
-                    </CardHeader>
-
-                    <CardContent className="pt-0">
-                      {/* Tags */}
-                      {task.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mb-3">
-                          {task.tags.map((tag) => (
-                            <Badge
-                              key={tag}
-                              variant="outline"
-                              className="text-xs px-2 py-0.5"
-                            >
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Priority & Due Date */}
-                      <div className="flex items-center justify-between mb-3">
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "text-xs capitalize",
-                            getPriorityBadgeColor(task.priority)
-                          )}
-                        >
-                          <Flag className="mr-1 h-2 w-2" />
-                          {task.priority}
-                        </Badge>
-                        {task.dueDate && (
-                          <div className="flex items-center text-xs text-muted-foreground">
-                            <CalendarIcon className="mr-1 h-3 w-3" />
-                            {formatDate(task.dueDate)}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Bottom Section */}
-                      <div className="flex items-center justify-between">
-                        <Avatar className="h-6 w-6">
-                          <AvatarImage src={task.assignee.avatar} />
-                          <AvatarFallback className="text-xs">
-                            {task.assignee.initials}
-                          </AvatarFallback>
-                        </Avatar>
-
-                        <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                          {task.comments.length > 0 && (
-                            <div className="flex items-center space-x-1">
-                              <MessageSquare className="h-3 w-3" />
-                              <span>{task.comments.length}</span>
-                            </div>
-                          )}
-                          {task.attachments.length > 0 && (
-                            <div className="flex items-center space-x-1">
-                              <Paperclip className="h-3 w-3" />
-                              <span>{task.attachments.length}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-
-                {/* Add Task Button */}
-                <Button
-                  variant="ghost"
-                  className="w-full h-12 border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5 transition-colors"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add a task
-                </Button>
-              </div>
-            </div>
-          ))}
+      <div className="flex items-center gap-4 mb-6 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search tasks..."
+            className="pl-9"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
-
-        {/* Desktop View */}
-        {columns.map((column) => (
-          <div key={column.id} className="hidden lg:flex flex-col h-full">
-            {/* Column Header */}
-            <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <h3 className="font-semibold text-lg">{column.title}</h3>
-                <Badge variant="secondary" className="text-xs">
-                  {column.tasks.length}
-                </Badge>
-              </div>
-              <Button variant="ghost" size="sm">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Tasks Container */}
-            <div
-              className={cn(
-                "flex-1 space-y-3 p-4 rounded-lg border-2 border-dashed transition-colors min-h-[500px]",
-                column.color,
-                "hover:bg-muted/20"
-              )}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, column.id)}
-            >
-              {column.tasks.map((task) => (
-                <Card
-                  key={task.id}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, task)}
-                  onClick={() => handleTaskClick(task)}
-                  className={cn(
-                    "cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4",
-                    getPriorityColor(task.priority),
-                    "hover:scale-105"
-                  )}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <CardTitle className="text-sm font-medium leading-tight">
-                        {task.title}
-                      </CardTitle>
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                        <MoreHorizontal className="h-3 w-3" />
-                      </Button>
-                    </div>
-                    {task.description && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {task.description}
-                      </p>
-                    )}
-                  </CardHeader>
-
-                  <CardContent className="pt-0">
-                    {/* Tags */}
-                    {task.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {task.tags.map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant="outline"
-                            className="text-xs px-2 py-0.5"
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Priority & Due Date */}
-                    <div className="flex items-center justify-between mb-3">
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "text-xs capitalize",
-                          getPriorityBadgeColor(task.priority)
-                        )}
-                      >
-                        <Flag className="mr-1 h-2 w-2" />
-                        {task.priority}
-                      </Badge>
-                      {task.dueDate && (
-                        <div className="flex items-center text-xs text-muted-foreground">
-                          <CalendarIcon className="mr-1 h-3 w-3" />
-                          {formatDate(task.dueDate)}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Bottom Section */}
-                    <div className="flex items-center justify-between">
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={task.assignee.avatar} />
-                        <AvatarFallback className="text-xs">
-                          {task.assignee.initials}
-                        </AvatarFallback>
-                      </Avatar>
-
-                      <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                        {task.comments.length > 0 && (
-                          <div className="flex items-center space-x-1">
-                            <MessageSquare className="h-3 w-3" />
-                            <span>{task.comments.length}</span>
-                          </div>
-                        )}
-                        {task.attachments.length > 0 && (
-                          <div className="flex items-center space-x-1">
-                            <Paperclip className="h-3 w-3" />
-                            <span>{task.attachments.length}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+        <div className="flex items-center gap-2">
+          <Label className="hidden sm:block">Assignee:</Label>
+          <Select value={filterAssignee} onValueChange={setFilterAssignee}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Assignees" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Assignees</SelectItem>
+              {mockAssignees.map((assignee) => (
+                <SelectItem key={assignee.id} value={assignee.id}>
+                  {assignee.name}
+                </SelectItem>
               ))}
-
-              {/* Add Task Button */}
-              <Button
-                variant="ghost"
-                className="w-full h-12 border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5 transition-colors"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add a task
-              </Button>
-            </div>
-          </div>
-        ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2">
+          <Label className="hidden sm:block">Priority:</Label>
+          <Select value={filterPriority} onValueChange={setFilterPriority}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Priorities" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Priorities</SelectItem>
+              {priorityOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {(searchTerm ||
+          filterAssignee !== "all" ||
+          filterPriority !== "all") && (
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setSearchTerm("");
+              setFilterAssignee("all");
+              setFilterPriority("all");
+            }}
+          >
+            Reset Filters
+          </Button>
+        )}
+      </div>
+      <div className="mb-4">
+        {viewMode === "board" && renderKanbanBoard()}
+        {viewMode === "list" && renderListView()}
+        {viewMode === "calendar" && renderCalendarView()}
+        {viewMode === "gantt" && renderGanttView()}
       </div>
 
-      {/* Task Details Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col bg-white/50 backdrop-blur-sm dark:bg-slate-900/50">
           <DialogHeader className="flex-shrink-0">
             <div className="flex items-center justify-between">
               <DialogTitle className="text-xl">Task Details</DialogTitle>
@@ -754,9 +1202,7 @@ export default function KanbanBoard() {
 
           {editedTask && (
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden">
-              {/* Main Content */}
               <div className="lg:col-span-2 space-y-6 overflow-y-auto pr-2">
-                {/* Title */}
                 <div className="space-y-2">
                   <Label htmlFor="title">Title</Label>
                   <Input
@@ -770,8 +1216,6 @@ export default function KanbanBoard() {
                     className="text-lg font-medium"
                   />
                 </div>
-
-                {/* Description */}
                 <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
                   <Textarea
@@ -787,13 +1231,60 @@ export default function KanbanBoard() {
                   />
                 </div>
 
-                {/* Comments */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <Label>Subtasks ({editedTask.progress}%)</Label>
+                  </div>
+                  <Progress value={editedTask.progress} className="h-2 mb-2" />
+                  <div className="space-y-2">
+                    {editedTask.subtasks.map((subtask, index) => (
+                      <div
+                        key={subtask.id}
+                        className="flex items-center space-x-2 group"
+                      >
+                        <Checkbox
+                          id={`subtask-${subtask.id}`}
+                          checked={subtask.completed}
+                          onCheckedChange={(checked) =>
+                            handleToggleSubtask(subtask.id, checked as boolean)
+                          }
+                        />
+                        <Input
+                          id={`subtask-input-${subtask.id}`}
+                          value={subtask.text}
+                          onChange={(e) =>
+                            handleUpdateSubtask(subtask.id, e.target.value)
+                          }
+                          placeholder={`Subtask ${index + 1}`}
+                          className="flex-1"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleDeleteSubtask(subtask.id)}
+                        >
+                          <X className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddSubtask}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Subtask
+                  </Button>
+                </div>
+
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <MessageCircle className="h-4 w-4" />
                     <Label>Comments ({editedTask.comments.length})</Label>
                   </div>
-
                   <div className="space-y-4">
                     {editedTask.comments.map((comment) => (
                       <div key={comment.id} className="flex space-x-3">
@@ -824,8 +1315,6 @@ export default function KanbanBoard() {
                       </div>
                     ))}
                   </div>
-
-                  {/* Add Comment */}
                   <div className="flex space-x-3">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={mockAssignees[3].avatar} />
@@ -850,20 +1339,17 @@ export default function KanbanBoard() {
                     </div>
                   </div>
                 </div>
-
-                {/* Attachments */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Paperclip className="h-4 w-4" />
                     <Label>Attachments ({editedTask.attachments.length})</Label>
                   </div>
-
                   {editedTask.attachments.length > 0 ? (
                     <div className="space-y-2">
                       {editedTask.attachments.map((attachment) => (
                         <div
                           key={attachment.id}
-                          className="flex items-center justify-between p-3 border rounded-lg"
+                          className="flex items-center justify-between p-3 border rounded-lg bg-muted/50"
                         >
                           <div className="flex items-center space-x-3">
                             <Paperclip className="h-4 w-4 text-muted-foreground" />
@@ -883,7 +1369,7 @@ export default function KanbanBoard() {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-6 border-2 border-dashed rounded-lg">
+                    <div className="text-center py-6 border-2 border-dashed rounded-lg bg-muted/50">
                       <Paperclip className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                       <p className="text-sm text-muted-foreground">
                         No attachments
@@ -896,16 +1382,16 @@ export default function KanbanBoard() {
                 </div>
               </div>
 
-              {/* Sidebar */}
-              <div className="space-y-6 overflow-y-auto">
-                {/* Status */}
+              <div className="space-y-6 overflow-y-auto pr-2 lg:col-span-1">
                 <div className="space-y-2">
                   <Label>Status</Label>
                   <Select
                     value={editedTask.status}
-                    onValueChange={(value: any) =>
+                    onValueChange={(value) =>
                       setEditedTask((prev) =>
-                        prev ? { ...prev, status: value } : null
+                        prev
+                          ? { ...prev, status: value as Task["status"] }
+                          : null
                       )
                     }
                   >
@@ -921,15 +1407,15 @@ export default function KanbanBoard() {
                     </SelectContent>
                   </Select>
                 </div>
-
-                {/* Priority */}
                 <div className="space-y-2">
                   <Label>Priority</Label>
                   <Select
                     value={editedTask.priority}
-                    onValueChange={(value: any) =>
+                    onValueChange={(value) =>
                       setEditedTask((prev) =>
-                        prev ? { ...prev, priority: value } : null
+                        prev
+                          ? { ...prev, priority: value as Task["priority"] }
+                          : null
                       )
                     }
                   >
@@ -937,10 +1423,19 @@ export default function KanbanBoard() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
+                      {priorityOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={cn(
+                                "h-2 w-2 rounded-full",
+                                `bg-${option.value}`
+                              )}
+                            />
+                            <span>{option.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <Badge
@@ -953,12 +1448,10 @@ export default function KanbanBoard() {
                     {editedTask.priority}
                   </Badge>
                 </div>
-
-                {/* Assignee */}
                 <div className="space-y-2">
                   <Label>Assignee</Label>
                   <Select
-                    value={editedTask.assignee?.id || ""}
+                    value={editedTask.assignee?.id || "all"}
                     onValueChange={(value) => {
                       const assignee = mockAssignees.find(
                         (a) => a.id === value
@@ -1001,14 +1494,9 @@ export default function KanbanBoard() {
                     </div>
                   )}
                 </div>
-
-                {/* Due Date */}
                 <div className="space-y-2">
                   <Label>Due Date</Label>
-                  <Popover
-                    open={isDatePickerOpen}
-                    onOpenChange={setIsDatePickerOpen}
-                  >
+                  <Popover>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
@@ -1031,16 +1519,12 @@ export default function KanbanBoard() {
                           setEditedTask((prev) =>
                             prev ? { ...prev, dueDate: date } : null
                           );
-                          setIsDatePickerOpen(false);
                         }}
-                        className="p-3 pointer-events-auto"
                         initialFocus
                       />
                     </PopoverContent>
                   </Popover>
                 </div>
-
-                {/* Tags */}
                 <div className="space-y-2">
                   <Label>Tags</Label>
                   <div className="flex flex-wrap gap-2">
@@ -1077,40 +1561,35 @@ export default function KanbanBoard() {
                     </Button>
                   </div>
                 </div>
-
                 <Separator />
-
-                {/* Metadata */}
                 <div className="space-y-3 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Created</p>
-                    <p>
-                      {new Intl.DateTimeFormat("ro-RO", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }).format(editedTask.createdAt)}
-                    </p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <History className="h-4 w-4" />
+                    <Label>Activity Log</Label>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground">Last updated</p>
-                    <p>
-                      {new Intl.DateTimeFormat("ro-RO", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }).format(editedTask.updatedAt)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Task ID</p>
-                    <p className="font-mono">{editedTask.id}</p>
+                  <div className="space-y-3">
+                    {editedTask.history
+                      .slice()
+                      .reverse()
+                      .map((entry) => (
+                        <div
+                          key={entry.id}
+                          className="text-xs text-muted-foreground"
+                        >
+                          <span className="font-medium text-foreground">
+                            {entry.action}
+                          </span>
+                          {entry.details && `: ${entry.details}`}
+                          <span className="block text-[10px] opacity-70">
+                            {new Intl.DateTimeFormat("ro-RO", {
+                              day: "numeric",
+                              month: "short",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }).format(entry.timestamp)}
+                          </span>
+                        </div>
+                      ))}
                   </div>
                 </div>
               </div>
